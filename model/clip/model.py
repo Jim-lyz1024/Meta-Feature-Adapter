@@ -163,9 +163,8 @@ class QuickGELU(nn.Module):
 
 
 class ResidualAttentionBlock(nn.Module):
-    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None):
+    def __init__(self, d_model: int, n_head: int):
         super().__init__()
-
         self.attn = nn.MultiheadAttention(d_model, n_head)
         self.ln_1 = LayerNorm(d_model)
         self.mlp = nn.Sequential(OrderedDict([
@@ -174,26 +173,34 @@ class ResidualAttentionBlock(nn.Module):
             ("c_proj", nn.Linear(d_model * 4, d_model))
         ]))
         self.ln_2 = LayerNorm(d_model)
-        self.attn_mask = attn_mask
 
-    def attention(self, x: torch.Tensor):
-        self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
-        return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask)[0]
+    def attention(self, x: torch.Tensor, attention_mask: torch.Tensor = None):
+        return self.attn(x, x, x, need_weights=False, attn_mask=attention_mask)[0]
 
-    def forward(self, x: torch.Tensor):
-        x = x + self.attention(self.ln_1(x))
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor = None):
+        x = x + self.attention(self.ln_1(x), attention_mask)
         x = x + self.mlp(self.ln_2(x))
         return x
 
 
+# class Transformer(nn.Module):
+#     def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None):
+#         super().__init__()
+#         self.width = width
+#         self.layers = layers
+#         self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
+
+#     def forward(self, x: torch.Tensor):
+#         return self.resblocks(x)
+    
 class Transformer(nn.Module):
     def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None):
         super().__init__()
         self.width = width
         self.layers = layers
-        self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
-
-    def forward(self, x: torch.Tensor):
+        self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads) for _ in range(layers)])
+        
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor = None):
         return self.resblocks(x)
 
 
@@ -203,15 +210,18 @@ class VisionTransformer(nn.Module):
         self.h_resolution = h_resolution
         self.w_resolution = w_resolution
         self.output_dim = output_dim
+        
+        # Calculate number of patches
+        num_patches = (h_resolution * w_resolution)
+        
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=stride_size, bias=False)
-
         scale = width ** -0.5
+        
         self.class_embedding = nn.Parameter(scale * torch.randn(width))
-        self.positional_embedding = nn.Parameter(scale * torch.randn(h_resolution*w_resolution + 1, width))
+        self.positional_embedding = nn.Parameter(scale * torch.randn(num_patches + 1, width))
+        
         self.ln_pre = LayerNorm(width)
-
         self.transformer = Transformer(width, layers, heads)
-
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
@@ -261,6 +271,7 @@ class CLIP(nn.Module):
         super().__init__()
 
         self.context_length = context_length
+        # self.context_length = 81
 
         if isinstance(vision_layers, (tuple, list)):
             vision_heads = vision_width * 32 // 64
@@ -293,7 +304,9 @@ class CLIP(nn.Module):
 
         self.vocab_size = vocab_size
         self.token_embedding = nn.Embedding(vocab_size, transformer_width)
-        self.positional_embedding = nn.Parameter(torch.empty(self.context_length, transformer_width))
+        # Initialize with new context length
+        self.positional_embedding = nn.Parameter(torch.empty(context_length, transformer_width))
+        nn.init.normal_(self.positional_embedding, std=0.01)
         self.ln_final = LayerNorm(transformer_width)
 
         self.text_projection = nn.Parameter(torch.empty(transformer_width, embed_dim))
@@ -406,9 +419,11 @@ def build_model(state_dict: dict, h_resolution: int, w_resolution: int, vision_s
         vision_width = state_dict["visual.conv1.weight"].shape[0]
         vision_layers = len([k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")])
         vision_patch_size = state_dict["visual.conv1.weight"].shape[-1]
+        
+        # Calculate grid sizes
         grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
         image_resolution = vision_patch_size * grid_size
-    else: #RN50
+    else:
         counts: list = [len(set(k.split(".")[2] for k in state_dict if k.startswith(f"visual.layer{b}"))) for b in [1, 2, 3, 4]]
         vision_layers = tuple(counts)
         vision_width = state_dict["visual.layer1.0.conv1.weight"].shape[0]
@@ -418,7 +433,7 @@ def build_model(state_dict: dict, h_resolution: int, w_resolution: int, vision_s
         image_resolution = output_width * 32
 
     embed_dim = state_dict["text_projection"].shape[1]
-    context_length = state_dict["positional_embedding"].shape[0] #77 (77,512)
+    context_length = 81  # New context length for metadata
     vocab_size = state_dict["token_embedding.weight"].shape[0]
     transformer_width = state_dict["ln_final.weight"].shape[0]
     transformer_heads = transformer_width // 64
@@ -430,36 +445,114 @@ def build_model(state_dict: dict, h_resolution: int, w_resolution: int, vision_s
         context_length, vocab_size, transformer_width, transformer_heads, transformer_layers,
         h_resolution, w_resolution
     )
+
+    # Resize vision positional embeddings
     if vit:
-        state_dict["visual.positional_embedding"] = resize_pos_embed(state_dict["visual.positional_embedding"], model.visual.positional_embedding, h_resolution, w_resolution)
-    else: #RN50
-        state_dict["visual.attnpool.positional_embedding"] = resize_pos_embed(state_dict["visual.attnpool.positional_embedding"], model.visual.attnpool.positional_embedding, h_resolution, w_resolution)
-    
-    
+        state_dict["visual.positional_embedding"] = resize_pos_embed(
+            state_dict["visual.positional_embedding"],
+            model.visual.positional_embedding,
+            h_resolution,
+            w_resolution
+        )
+    else:
+        state_dict["visual.attnpool.positional_embedding"] = resize_pos_embed(
+            state_dict["visual.attnpool.positional_embedding"],
+            model.visual.attnpool.positional_embedding,
+            h_resolution,
+            w_resolution
+        )
+
+    # Resize text positional embeddings
+    state_dict["positional_embedding"] = resize_text_pos_embed(
+        state_dict["positional_embedding"],
+        context_length
+    )
+
+    # Delete size-specific attributes
     for key in ["input_resolution", "context_length", "vocab_size"]:
         if key in state_dict:
             del state_dict[key]
-            
-    convert_weights(model)
 
+    convert_weights(model)
     model.load_state_dict(state_dict)
     return model.eval()
 
+def resize_pos_embed_1d(posemb, length_new):
+    """
+    Resize positional embeddings from original length to new length
+    """
+    # Rescale the grid of position embeddings when loading from state_dict
+    length_old = posemb.shape[0]
+    
+    # First, remove the CLS token embedding if it exists
+    if length_old == length_new:
+        return posemb
+        
+    class_emb = posemb[0:1]
+    posemb_grid = posemb[1:]
+
+    # Resize the grid
+    length_old_grid = length_old - 1
+    length_new_grid = length_new - 1
+    
+    # Interpolate the position embeddings
+    posemb_grid = posemb_grid.unsqueeze(0)  # Add batch dimension
+    posemb_grid = F.interpolate(
+        posemb_grid.permute(0, 2, 1),  # [1, dim, seq_len]
+        size=(length_new_grid,),
+        mode='linear',
+        align_corners=False
+    )
+    posemb_grid = posemb_grid.permute(0, 2, 1)  # [1, seq_len, dim]
+    posemb_grid = posemb_grid.squeeze(0)  # Remove batch dimension
+    
+    # Concatenate back the CLS token
+    posemb = torch.cat([class_emb, posemb_grid], dim=0)
+    
+    return posemb
+
 import math
-def resize_pos_embed(posemb, posemb_new, hight, width):
-    # Rescale the grid of position embeddings when loading from state_dict. Adapted from
-    # https://github.com/google-research/vision_transformer/blob/00883dd691c63a6830751563748663526e811cee/vit_jax/checkpoint.py#L224
-    print('Resized position embedding: %s to %s', posemb.shape, posemb_new.shape)
-      
-    ntok_new = posemb_new.shape[0] #129,2048
+def resize_pos_embed(posemb, posemb_new, h_resolution, w_resolution):
+    """
+    Rescale positional embeddings when loading from state_dict
+    Args:
+        posemb: Original positional embeddings (from state dict)
+        posemb_new: Target positional embeddings (in current model)
+        h_resolution: New height resolution
+        w_resolution: New width resolution
+    """
+    # Handle visual embedding
+    ntok_new = posemb_new.shape[0]
+    if len(posemb.shape) == 2:  # For visual embeddings
+        # Extract class token and grid tokens
+        posemb_tok, posemb_grid = posemb[:1], posemb[1:]
+        
+        # Calculate grid sizes
+        gs_old_h = gs_old_w = int(math.sqrt(len(posemb_grid)))
+        gs_new_h, gs_new_w = h_resolution, w_resolution
+        
+        # Reshape and interpolate grid embeddings
+        posemb_grid = posemb_grid.reshape(1, gs_old_h, gs_old_w, -1).permute(0, 3, 1, 2)
+        posemb_grid = F.interpolate(posemb_grid, size=(gs_new_h, gs_new_w), mode='bilinear')
+        posemb_grid = posemb_grid.permute(0, 2, 3, 1).reshape(gs_new_h * gs_new_w, -1)
+        
+        # Combine with class token
+        posemb = torch.cat([posemb_tok, posemb_grid], dim=0)
+        
+    return posemb
 
-    posemb_token, posemb_grid = posemb[:1], posemb[1:]
-    ntok_new -= 1
-
-    gs_old = int(math.sqrt(len(posemb_grid))) #14
-    print('Position embedding resize to height:{} width: {}'.format(hight, width))
-    posemb_grid = posemb_grid.reshape(1, gs_old, gs_old, -1).permute(0, 3, 1, 2) 
-    posemb_grid = F.interpolate(posemb_grid, size=(hight, width), mode='bilinear') 
-    posemb_grid = posemb_grid.permute(0, 2, 3, 1).reshape(1, hight * width, -1)
-    posemb = torch.cat([posemb_token, posemb_grid.squeeze()], dim=0)
+def resize_text_pos_embed(posemb, length_new):
+    """Resize text positional embeddings"""
+    length_old = posemb.shape[0]
+    
+    # Handle text embeddings
+    posemb = posemb.unsqueeze(0)  # Add batch dimension
+    posemb = F.interpolate(
+        posemb.permute(0, 2, 1),
+        size=(length_new,),
+        mode='linear',
+        align_corners=False
+    )
+    posemb = posemb.permute(0, 2, 1).squeeze(0)  # Remove batch dimension
+    
     return posemb
