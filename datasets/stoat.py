@@ -124,6 +124,9 @@ class STOAT(BaseImageDataset):
         humidity = float(humidity)
         angle = float(angle)
         rain = float(rain)
+        
+        print(temperature, humidity, rain, angle)
+        # exit()
 
         temperature_label = 0
         if temperature < 15:

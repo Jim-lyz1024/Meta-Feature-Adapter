@@ -109,7 +109,7 @@ _C.SOLVER = CN()
 # Name of optimizer
 _C.SOLVER.OPTIMIZER_NAME = "Adam"
 # Number of max epoches
-_C.SOLVER.MAX_EPOCHS = 100
+_C.SOLVER.MAX_EPOCHS = 50
 # Base learning rate
 _C.SOLVER.BASE_LR = 3e-4
 # Whether using larger learning rate for fc layer
