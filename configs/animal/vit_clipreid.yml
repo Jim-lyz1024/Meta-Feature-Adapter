@@ -113,8 +113,8 @@ TEST:
 
 DATASETS:
   NAMES: ("stoat")
-  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
-OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/scripts/Stoat/CLIP-ReID"
+  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
+OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
 
 
 #DATASETS:
