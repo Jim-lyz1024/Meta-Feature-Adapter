@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 from .clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
+
 _tokenizer = _Tokenizer()
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -19,6 +21,7 @@ def weights_init_kaiming(m):
         if m.affine:
             nn.init.constant_(m.weight, 1.0)
             nn.init.constant_(m.bias, 0.0)
+
 
 def weights_init_classifier(m):
     classname = m.__class__.__name__
@@ -37,17 +40,37 @@ class TextEncoder(nn.Module):
         self.text_projection = clip_model.text_projection
         self.dtype = clip_model.dtype
 
-    def forward(self, prompts, tokenized_prompts): 
-        x = prompts + self.positional_embedding.type(self.dtype) 
+    def forward(self, prompts, tokenized_prompts):
+        x = prompts + self.positional_embedding.type(self.dtype)
         x = x.permute(1, 0, 2)  # NLD -> LND 
-        x = self.transformer(x) 
+        x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
-        x = self.ln_final(x).type(self.dtype) 
+        x = self.ln_final(x).type(self.dtype)
 
         # x.shape = [batch_size, n_ctx, transformer.width]
         # take features from the eot embedding (eot_token is the highest number in each sequence)
-        x = x[torch.arange(x.shape[0]), tokenized_prompts.argmax(dim=-1)] @ self.text_projection 
+        x = x[torch.arange(x.shape[0]), tokenized_prompts.argmax(dim=-1)] @ self.text_projection
         return x
+
+class CrossAttention(nn.Module):
+    def __init__(self, d_in, d_out_kq, d_out_v):
+        super().__init__()
+        self.d_out_kq = d_out_kq
+        self.W_query = nn.Parameter(torch.rand(d_in, d_out_kq))
+        self.W_key = nn.Parameter(torch.rand(d_in, d_out_kq))
+        self.W_value = nn.Parameter(torch.rand(d_in, d_out_v))
+
+    def forward(self, x_1, x_2):
+        queries_1 = x_1 @ self.W_query
+        keys_2 = x_2 @ self.W_key
+        values_2 = x_2 @ self.W_value
+
+        attn_scores = queries_1 @ keys_2.T
+        attn_weights = torch.softmax(
+            attn_scores / self.d_out_kq**0.5, dim=-1)
+
+        context_vec = attn_weights @ values_2
+        return context_vec
 
 class build_transformer(nn.Module):
     def __init__(self, num_classes, camera_num, view_num, cfg):
@@ -65,7 +88,7 @@ class build_transformer(nn.Module):
         self.num_classes = num_classes
         self.camera_num = camera_num
         self.view_num = view_num
-        self.sie_coe = cfg.MODEL.SIE_COE   
+        self.sie_coe = cfg.MODEL.SIE_COE
 
         self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
         self.classifier.apply(weights_init_classifier)
@@ -79,8 +102,8 @@ class build_transformer(nn.Module):
         self.bottleneck_proj.bias.requires_grad_(False)
         self.bottleneck_proj.apply(weights_init_kaiming)
 
-        self.h_resolution = int((cfg.INPUT.SIZE_TRAIN[0]-16)//cfg.MODEL.STRIDE_SIZE[0] + 1)
-        self.w_resolution = int((cfg.INPUT.SIZE_TRAIN[1]-16)//cfg.MODEL.STRIDE_SIZE[1] + 1)
+        self.h_resolution = int((cfg.INPUT.SIZE_TRAIN[0] - 16) // cfg.MODEL.STRIDE_SIZE[0] + 1)
+        self.w_resolution = int((cfg.INPUT.SIZE_TRAIN[1] - 16) // cfg.MODEL.STRIDE_SIZE[1] + 1)
         self.vision_stride_size = cfg.MODEL.STRIDE_SIZE[0]
         clip_model = load_clip_to_cpu(self.model_name, self.h_resolution, self.w_resolution, self.vision_stride_size)
         clip_model.to("cuda")
@@ -104,46 +127,59 @@ class build_transformer(nn.Module):
         self.prompt_learner = PromptLearner(num_classes, dataset_name, clip_model.dtype, clip_model.token_embedding)
         self.text_encoder = TextEncoder(clip_model)
 
-    def forward(self, x = None, label=None, get_image = False, get_text = False, cam_label= None, view_label=None):
+        self.attn = CrossAttention (512, 512, 512)
+
+
+    def forward(self, x=None, label=None, get_image=False, get_text=False, cam_label=None, view_label=None,
+                temperature_label=None,
+                humidity_label=None, rain_label=None, angle=None,
+                ):
         if get_text == True:
-            prompts = self.prompt_learner(label) 
+            prompts = self.prompt_learner(label, temperature_label, humidity_label, rain_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
             return text_features
 
         if get_image == True:
-            image_features_last, image_features, image_features_proj = self.image_encoder(x) 
+            image_features_last, image_features, image_features_proj = self.image_encoder(x)
             if self.model_name == 'RN50':
                 return image_features_proj[0]
             elif self.model_name == 'ViT-B-16':
-                return image_features_proj[:,0]
-        
+                return image_features_proj[:, 0]
+
         if self.model_name == 'RN50':
-            image_features_last, image_features, image_features_proj = self.image_encoder(x) 
-            img_feature_last = nn.functional.avg_pool2d(image_features_last, image_features_last.shape[2:4]).view(x.shape[0], -1) 
-            img_feature = nn.functional.avg_pool2d(image_features, image_features.shape[2:4]).view(x.shape[0], -1) 
+            image_features_last, image_features, image_features_proj = self.image_encoder(x)
+            img_feature_last = nn.functional.avg_pool2d(image_features_last, image_features_last.shape[2:4]).view(
+                x.shape[0], -1)
+            img_feature = nn.functional.avg_pool2d(image_features, image_features.shape[2:4]).view(x.shape[0], -1)
             img_feature_proj = image_features_proj[0]
 
         elif self.model_name == 'ViT-B-16':
-            if cam_label != None and view_label!=None:
+            if cam_label != None and view_label != None:
                 cv_embed = self.sie_coe * self.cv_embed[cam_label * self.view_num + view_label]
             elif cam_label != None:
                 cv_embed = self.sie_coe * self.cv_embed[cam_label]
-            elif view_label!=None:
+            elif view_label != None:
                 cv_embed = self.sie_coe * self.cv_embed[view_label]
             else:
                 cv_embed = None
-            image_features_last, image_features, image_features_proj = self.image_encoder(x, cv_embed) 
-            img_feature_last = image_features_last[:,0]
-            img_feature = image_features[:,0]
-            img_feature_proj = image_features_proj[:,0]
+            image_features_last, image_features, image_features_proj = self.image_encoder(x, cv_embed)
+            img_feature_last = image_features_last[:, 0]
+            img_feature = image_features[:, 0]
+            img_feature_proj = image_features_proj[:, 0]
 
-        feat = self.bottleneck(img_feature) 
-        feat_proj = self.bottleneck_proj(img_feature_proj) 
-        
+        feat = self.bottleneck(img_feature)
+        feat_proj = self.bottleneck_proj(img_feature_proj)
+
+
         if self.training:
+            prompts = self.prompt_learner(label, temperature_label, humidity_label, rain_label, angle)
+            text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
+
+            feat_proj = self.attn(feat_proj,text_features)
+
             cls_score = self.classifier(feat)
             cls_score_proj = self.classifier_proj(feat_proj)
-            return [cls_score, cls_score_proj], [img_feature_last, img_feature, img_feature_proj], img_feature_proj
+            return [cls_score, cls_score_proj], [img_feature_last, img_feature, img_feature_proj], feat_proj
 
         else:
             if self.neck_feat == 'after':
@@ -151,7 +187,6 @@ class build_transformer(nn.Module):
                 return torch.cat([feat, feat_proj], dim=1)
             else:
                 return torch.cat([img_feature, img_feature_proj], dim=1)
-
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path)
@@ -172,9 +207,12 @@ def make_model(cfg, num_class, camera_num, view_num):
 
 
 from .clip import clip
+
+
 def load_clip_to_cpu(backbone_name, h_resolution, w_resolution, vision_stride_size):
     url = clip._MODELS[backbone_name]
-    model_path = clip._download(url)
+    # model_path = clip._download(url)
+    model_path = 'ViT-B-16.pt'
 
     try:
         # loading JIT archive
@@ -188,74 +226,90 @@ def load_clip_to_cpu(backbone_name, h_resolution, w_resolution, vision_stride_si
 
     return model
 
+
 class PromptLearner(nn.Module):
     def __init__(self, num_class, dataset_name, dtype, token_embedding):
         super().__init__()
         if dataset_name == "atrw":
             ctx_init = "A photo of a X X X X tiger."
-            
+
         elif dataset_name == "stoat":
-            ctx_init = "A photo of a X X X X stoat."
-        
+            ctx_init = "A photo of a X X X X stoat, The temperature is X degrees, Humanity is X%, Rainfall is X mm, Angle is X"
+
         elif dataset_name == "friesiancattle2017":
             ctx_init = "A photo of a X X X X cattle."
-            
+
         elif dataset_name == "lion":
             ctx_init = "A photo of a X X X X lion."
-            
+
         elif dataset_name == "mpdd":
             ctx_init = "A photo of a X X X X dog."
-            
+
         elif dataset_name == "ipanda50":
             ctx_init = "A photo of a X X X X panda."
-            
+
         elif dataset_name == "seastar":
             ctx_init = "A photo of a X X X X seastar."
-            
+
         elif dataset_name == "nyala":
             ctx_init = "A photo of a X X X X nyala."
-           
+
         elif dataset_name == "polarbear":
-            ctx_init = "A photo of a X X X X polarbear."    
-            
-            
+            ctx_init = "A photo of a X X X X polarbear."
+
         ctx_dim = 512
         # use given words to initialize context vectors
         ctx_init = ctx_init.replace("_", " ")
-        n_ctx = 4
-        
-        tokenized_prompts = clip.tokenize(ctx_init).cuda() 
+        n_ctx = 8
+
+        tokenized_prompts = clip.tokenize(ctx_init).cuda()
         with torch.no_grad():
-            embedding = token_embedding(tokenized_prompts).type(dtype) 
+            embedding = token_embedding(tokenized_prompts).type(dtype)
         self.tokenized_prompts = tokenized_prompts  # torch.Tensor
 
         n_cls_ctx = 4
-        cls_vectors = torch.empty(num_class, n_cls_ctx, ctx_dim, dtype=dtype) 
+        cls_vectors = torch.empty(num_class, n_cls_ctx, ctx_dim, dtype=dtype)
         nn.init.normal_(cls_vectors, std=0.02)
-        self.cls_ctx = nn.Parameter(cls_vectors) 
-        
+        self.cls_ctx = nn.Parameter(cls_vectors)
+
+        temperature_vectors = torch.empty(3, n_cls_ctx, ctx_dim, dtype=dtype)
+        nn.init.normal_(temperature_vectors, std=0.02)
+        self.temperature_ctx = nn.Parameter(temperature_vectors)
+
+        humidity_vectors = torch.empty(3, n_cls_ctx, ctx_dim, dtype=dtype)
+        nn.init.normal_(humidity_vectors, std=0.02)
+        self.humidity_ctx = nn.Parameter(humidity_vectors)
+
+        angle_vectors = torch.empty(4, n_cls_ctx, ctx_dim, dtype=dtype)
+        nn.init.normal_(angle_vectors, std=0.02)
+        self.angle_ctx = nn.Parameter(angle_vectors)
+
+        rain_vectors = torch.empty(4, n_cls_ctx, ctx_dim, dtype=dtype)
+        nn.init.normal_(rain_vectors, std=0.02)
+        self.rain_ctx = nn.Parameter(rain_vectors)
+
         # These token vectors will be saved when in save_model(),
         # but they should be ignored in load_model() as we want to use
         # those computed using the current class names
-        self.register_buffer("token_prefix", embedding[:, :n_ctx + 1, :])  
-        self.register_buffer("token_suffix", embedding[:, n_ctx + 1 + n_cls_ctx: , :])  
+        self.register_buffer("token_prefix", embedding[:, :n_ctx + 1, :])
+        self.register_buffer("token_suffix", embedding[:, n_ctx + 1 + n_cls_ctx:, :])
         self.num_class = num_class
         self.n_cls_ctx = n_cls_ctx
 
-    def forward(self, label):
-        cls_ctx = self.cls_ctx[label] 
+    def forward(self, label, temperature_label, humidity_label, rain_label, angle):
+        cls_ctx = self.cls_ctx[label] + self.temperature_ctx[temperature_label] + self.humidity_ctx[humidity_label] + \
+                  self.rain_ctx[rain_label] + self.angle_ctx[angle]
         b = label.shape[0]
-        prefix = self.token_prefix.expand(b, -1, -1) 
-        suffix = self.token_suffix.expand(b, -1, -1) 
-            
+        prefix = self.token_prefix.expand(b, -1, -1)
+        suffix = self.token_suffix.expand(b, -1, -1)
+
         prompts = torch.cat(
             [
                 prefix,  # (n_cls, 1, dim)
-                cls_ctx,     # (n_cls, n_ctx, dim)
+                cls_ctx,  # (n_cls, n_ctx, dim)
                 suffix,  # (n_cls, *, dim)
             ],
             dim=1,
-        ) 
+        )
 
-        return prompts 
-
+        return prompts

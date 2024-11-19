@@ -3,9 +3,14 @@ import re
 
 import os.path as osp
 
+import json
+
+import os
+
 from .bases import BaseImageDataset
 from collections import defaultdict
 import pickle
+
 
 class STOAT(BaseImageDataset):
     """
@@ -18,19 +23,27 @@ class STOAT(BaseImageDataset):
     """
     dataset_dir = "Stoat"
 
-    def __init__(self, root='', verbose=True, pid_begin = 0, **kwargs):
+    def __init__(self, root='', verbose=True, pid_begin=0, data_p='data/stoat.json', **kwargs):
         super(STOAT, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
         self.train_dir = osp.join(self.dataset_dir, 'train')
         self.query_dir = osp.join(self.dataset_dir, 'query')
         self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
 
+        with open(data_p, 'rb') as f:
+            data = json.load(f)
+
+        infos = {}
+        for d in data['images']:
+            infos[d['img_path'].split('\\')[-1]] = d['metadata']
+
+        self.infos = infos
+
         self._check_before_run()
         self.pid_begin = pid_begin
         train = self._process_dir(self.train_dir, relabel=True)
         query = self._process_dir(self.query_dir, relabel=False)
         gallery = self._process_dir(self.gallery_dir, relabel=False)
-        
 
         if verbose:
             print("=> Stoat loaded")
@@ -40,9 +53,12 @@ class STOAT(BaseImageDataset):
         self.query = query
         self.gallery = gallery
 
-        self.num_train_pids, self.num_train_imgs, self.num_train_cams, self.num_train_vids = self.get_imagedata_info(self.train)
-        self.num_query_pids, self.num_query_imgs, self.num_query_cams, self.num_query_vids = self.get_imagedata_info(self.query)
-        self.num_gallery_pids, self.num_gallery_imgs, self.num_gallery_cams, self.num_gallery_vids = self.get_imagedata_info(self.gallery)
+        self.num_train_pids, self.num_train_imgs, self.num_train_cams, self.num_train_vids = self.get_imagedata_info(
+            self.train)
+        self.num_query_pids, self.num_query_imgs, self.num_query_cams, self.num_query_vids = self.get_imagedata_info(
+            self.query)
+        self.num_gallery_pids, self.num_gallery_imgs, self.num_gallery_cams, self.num_gallery_vids = self.get_imagedata_info(
+            self.gallery)
 
     def _check_before_run(self):
         """Check if all files are available before going deeper"""
@@ -57,14 +73,13 @@ class STOAT(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        
-        special_cameras = {"CREK" : 1000, "FC01" : 1001, "FC11" : 1002, "GC34" : 1003, "P164" : 1004}
-        pattern = re.compile(r'\d+_[0-9a-zA-Z]+_\d+')
 
+        special_cameras = {"CREK": 1000, "FC01": 1001, "FC11": 1002, "GC34": 1003, "P164": 1004}
+        pattern = re.compile(r'\d+_[0-9a-zA-Z]+_\d+')
 
         pid_container = set()
         camid_container = set()
-        
+
         for img_path in sorted(img_paths):
             pid, camid, _ = pattern.search(img_path).group().split("_")
             pid = int(pid)
@@ -74,7 +89,7 @@ class STOAT(BaseImageDataset):
             pid_container.add(pid)
             camid_container.add(camid)
 
-        pid2label = {pid : label for label, pid in enumerate(pid_container)}
+        pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
         dataset = []
         for img_path in sorted(img_paths):
@@ -83,13 +98,57 @@ class STOAT(BaseImageDataset):
             if camid in special_cameras:
                 camid = special_cameras[camid]
             camid = int(camid)
-            
+
             assert 0 <= pid <= 55
-            
+
             if relabel:
                 pid = pid2label[pid]
-            
-            #camid = -1
-            dataset.append((img_path, self.pid_begin + pid, camid, 0))
+            name = os.path.basename(img_path)
+            dataset_info = self.infos[name]
+
+            metalabel = self.get_metalabel(dataset_info)
+
+            # camid = -1
+            dataset.append((img_path, self.pid_begin + pid, camid, 0,*metalabel))
 
         return dataset
+
+    def get_metalabel(self, dataset_info):
+
+        temperature = dataset_info['temperature']
+        humidity = dataset_info['humidity']
+        rain = dataset_info['rain']
+        angle = dataset_info['angle']
+
+        temperature = float(temperature)
+        humidity = float(humidity)
+        angle = float(angle)
+        rain = float(rain)
+
+        temperature_label = 0
+        if temperature < 15:
+            temperature_label = 0
+        elif temperature >= 15 and temperature < 25:
+            temperature_label = 1
+        elif temperature >= 25:
+            temperature_label = 2
+
+        humidity_label = 0
+        if humidity < 60:
+            humidity_label = 0
+        elif humidity >= 60 and humidity < 80:
+            humidity_label = 1
+        elif humidity >= 80:
+            humidity_label = 2
+
+        rain_label = 0
+        if rain == 0:
+            rain_label = 0
+        elif rain > 0 and rain <= 10:
+            rain_label = 1
+        elif rain > 10 and rain <= 50:
+            rain_label = 2
+        elif rain >= 50:
+            rain_label = 3
+
+        return temperature_label, humidity_label, rain_label, angle

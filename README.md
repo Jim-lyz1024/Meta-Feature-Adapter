@@ -37,7 +37,7 @@ OUTPUT_DIR: 'your_output_dir'
 then run 
 
 ```
-CUDA_VISIBLE_DEVICES=0 python train.py --config_file configs/person/cnn_base.yml
+CUDA_VISIBLE_DEVICES=0 python train.py --config_file configs/animal/vit_clipreid.yml
 ```
 
 if you want to run ViT-based CLIP-ReID for MSMT17, you need to modify the bottom of configs/person/vit_clipreid.yml to

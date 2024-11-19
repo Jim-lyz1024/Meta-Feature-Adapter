@@ -12,6 +12,7 @@ import os
 import argparse
 from config import cfg_base as cfg
 
+
 def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
