@@ -297,8 +297,13 @@ class PromptLearner(nn.Module):
         self.n_cls_ctx = n_cls_ctx
 
     def forward(self, label, temperature_label, humidity_label, rain_label, angle):
-        cls_ctx = self.cls_ctx[label] + self.temperature_ctx[temperature_label] + self.humidity_ctx[humidity_label] + \
-                  self.rain_ctx[rain_label] + self.angle_ctx[angle]
+        cls_ctx = self.cls_ctx[label]
+        if all(x is not None for x in [temperature_label, humidity_label, rain_label, angle]):
+            cls_ctx = (cls_ctx + 
+                      self.temperature_ctx[temperature_label] + 
+                      self.humidity_ctx[humidity_label] + 
+                      self.rain_ctx[rain_label] + 
+                      self.angle_ctx[angle])
         b = label.shape[0]
         prefix = self.token_prefix.expand(b, -1, -1)
         suffix = self.token_suffix.expand(b, -1, -1)

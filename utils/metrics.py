@@ -38,10 +38,10 @@ def eval_func(distmat, q_pids, g_pids, q_camids, g_camids, dataset_name, max_ran
     
     # For the stoat dataset, we need to change the diagonal entry of the distance matrix to the maximum element of each row.
     # This is because we have exactly same gallery and query sets.
-    if dataset_name == "stoat":
-        # print(np.diag(distmat))
-        max_dist = np.amax(distmat, axis=1)
-        np.fill_diagonal(distmat, max_dist)
+    # if dataset_name == "stoat":
+    #     # print(np.diag(distmat))
+    #     max_dist = np.amax(distmat, axis=1)
+    #     np.fill_diagonal(distmat, max_dist)
         # print()
         # print(np.diag(distmat))
 

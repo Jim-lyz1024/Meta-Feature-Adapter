@@ -70,7 +70,49 @@ class STOAT(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.query_dir))
         if not osp.exists(self.gallery_dir):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
-    
+
+    def _process_dir(self, dir_path, relabel=False):
+        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+
+        special_cameras = {"CREK": 1000, "FC01": 1001, "FC11": 1002, "GC34": 1003, "P164": 1004}
+        pattern = re.compile(r'\d+_[0-9a-zA-Z]+_\d+')
+
+        pid_container = set()
+        camid_container = set()
+
+        for img_path in sorted(img_paths):
+            pid, camid, _ = pattern.search(img_path).group().split("_")
+            pid = int(pid)
+            if camid in special_cameras:
+                camid = special_cameras[camid]
+            camid = int(camid)
+            pid_container.add(pid)
+            camid_container.add(camid)
+
+        pid2label = {pid: label for label, pid in enumerate(pid_container)}
+
+        dataset = []
+        for img_path in sorted(img_paths):
+            pid, camid, _ = pattern.search(img_path).group().split("_")
+            pid = int(pid)
+            if camid in special_cameras:
+                camid = special_cameras[camid]
+            camid = int(camid)
+
+            assert 0 <= pid <= 55
+
+            if relabel:
+                pid = pid2label[pid]
+            name = os.path.basename(img_path)
+            dataset_info = self.infos[name]
+
+            metalabel = self.get_metalabel(dataset_info)
+
+            # camid = -1
+            dataset.append((img_path, self.pid_begin + pid, camid, 0,*metalabel))
+
+        return dataset
+
     def get_metalabel(self, dataset_info):
 
         temperature = dataset_info['temperature']
@@ -115,51 +157,5 @@ class STOAT(BaseImageDataset):
         elif angle==3:
             angle_label='right'
 
-        # print(temperature_label, humidity_label, rain_label, angle_label)
+        print(temperature_label, humidity_label, rain_label, angle_label)
         return temperature_label, humidity_label, rain_label, angle_label
-
-    def _process_dir(self, dir_path, relabel=False):
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        pattern = re.compile(r'(\d+)_([A-Za-z0-9-]+)_(\d+)')
-        
-        print(f"\nProcessing directory: {dir_path}")
-        print(f"Number of images found: {len(img_paths)}")
-
-        pid_container = set()
-        camid_container = set()
-        
-        # First pass to collect PIDs and camera IDs
-        for img_path in sorted(img_paths):
-            basename = osp.basename(img_path)
-            match = pattern.match(basename)
-            if match:
-                pid = int(match.group(1))
-                camid = hash(match.group(2)) % 10000  # Convert camera string to numeric ID
-                pid_container.add(pid)
-                camid_container.add(camid)
-
-        pid2label = {pid: label for label, pid in enumerate(pid_container)}
-
-        # Second pass to build dataset with metadata
-        dataset = []
-        for img_path in sorted(img_paths):
-            basename = osp.basename(img_path)
-            match = pattern.match(basename)
-            if match:
-                pid = int(match.group(1))
-                camid = hash(match.group(2)) % 10000
-                
-                if relabel:
-                    pid = pid2label[pid]
-                
-                # Get metadata and labels
-                dataset_info = self.infos[basename.strip()]
-                if dataset_info is None:
-                    print(f"Warning: No metadata found for {basename}")
-                    continue
-                metalabel = self.get_metalabel(dataset_info)
-                
-                dataset.append((img_path, self.pid_begin + pid, camid, 0, *metalabel))
-
-        return dataset
-
