@@ -68,6 +68,11 @@ class BaseImageDataset(BaseDataset):
         print("  query    | {:5d} | {:8d} | {:9d}".format(num_query_pids, num_query_imgs, num_query_cams))
         print("  ----------------------------------------")
 
+temperature2label = {'cold':0, 'mild':1, 'hot':2,}
+humidity2label = {'dry':0, 'moderate':1, 'humid':2,}
+rain2label = {'no rain':0, 'light':1, 'moderate':2,'heavy':3}
+angle2label = {'front':0, 'back':1, 'left':2, 'right':3}
+
 
 class ImageDataset(Dataset):
     def __init__(self, dataset, transform=None):
@@ -79,6 +84,12 @@ class ImageDataset(Dataset):
 
     def __getitem__(self, index):
         img_path, pid, camid, trackid,temperature_label, humidity_label, rain_label, angle = self.dataset[index]
+
+        temperature_label = temperature2label[temperature_label]
+        humidity_label = humidity2label[humidity_label]
+        rain_label = rain2label[rain_label]
+        angle = angle2label[angle]
+
         img = read_image(img_path)
 
         if self.transform is not None:

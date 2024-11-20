@@ -124,34 +124,38 @@ class STOAT(BaseImageDataset):
         humidity = float(humidity)
         angle = float(angle)
         rain = float(rain)
-        
-        print(temperature, humidity, rain, angle)
-        # exit()
 
-        temperature_label = 0
         if temperature < 15:
-            temperature_label = 0
+            temperature_label = 'cold'
         elif temperature >= 15 and temperature < 25:
-            temperature_label = 1
+            temperature_label = 'mild'
         elif temperature >= 25:
-            temperature_label = 2
+            temperature_label = 'hot'
 
-        humidity_label = 0
         if humidity < 60:
-            humidity_label = 0
+            humidity_label = 'dry'
         elif humidity >= 60 and humidity < 80:
-            humidity_label = 1
+            humidity_label = 'moderate'
         elif humidity >= 80:
-            humidity_label = 2
+            humidity_label = 'humid'
 
-        rain_label = 0
         if rain == 0:
-            rain_label = 0
+            rain_label = 'no rain'
         elif rain > 0 and rain <= 10:
-            rain_label = 1
+            rain_label = 'light'
         elif rain > 10 and rain <= 50:
-            rain_label = 2
+            rain_label = 'moderate'
         elif rain >= 50:
-            rain_label = 3
+            rain_label = 'heavy'
 
-        return temperature_label, humidity_label, rain_label, angle
+        if angle==0:
+            angle_label='front'
+        elif angle==1:
+            angle_label='back'
+        elif angle==2:
+            angle_label='left'
+        elif angle==3:
+            angle_label='right'
+
+        print(temperature_label, humidity_label, rain_label, angle_label)
+        return temperature_label, humidity_label, rain_label, angle_label
