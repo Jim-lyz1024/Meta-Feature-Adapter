@@ -64,12 +64,16 @@ def do_train_stage2(cfg,
         for i in range(i_ter):
             if i + 1 != i_ter:
                 l_list = torch.arange(i * batch, (i + 1) * batch)
+                l_list1 = torch.randint(high=3, low=0,size=[batch])
+                l_list2 = torch.randint(high=3, low=0,size=[batch])
+                l_list3 = torch.randint(high=4, low=0,size=[batch])
+                l_list4 = torch.randint(high=4, low=0,size=[batch])
             else:
                 l_list = torch.arange(i * batch, num_classes)
-                l_list1 = torch.randint(high=3, low=0,size=[num_classes])
-                l_list2 = torch.randint(high=3, low=0,size=[num_classes])
-                l_list3 = torch.randint(high=4, low=0,size=[num_classes])
-                l_list4 = torch.randint(high=4, low=0,size=[num_classes])
+                l_list1 = torch.randint(high=3, low=0,size=[num_classes-i * batch])
+                l_list2 = torch.randint(high=3, low=0,size=[num_classes-i * batch])
+                l_list3 = torch.randint(high=4, low=0,size=[num_classes-i * batch])
+                l_list4 = torch.randint(high=4, low=0,size=[num_classes-i * batch])
 
             with amp.autocast(enabled=True):
                 text_feature = model(label=l_list, get_text=True, temperature_label=l_list1,
