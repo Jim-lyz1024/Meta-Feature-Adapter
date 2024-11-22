@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 from .clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
+from torch.nn import functional as F
+import math
 
 _tokenizer = _Tokenizer()
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -59,18 +61,26 @@ class CrossAttention(nn.Module):
         self.W_query = nn.Parameter(torch.rand(d_in, d_out_kq))
         self.W_key = nn.Parameter(torch.rand(d_in, d_out_kq))
         self.W_value = nn.Parameter(torch.rand(d_in, d_out_v))
+        
+        # Initialize weights properly
+        nn.init.xavier_uniform_(self.W_query)
+        nn.init.xavier_uniform_(self.W_key)
+        nn.init.xavier_uniform_(self.W_value)
 
     def forward(self, x_1, x_2):
-        queries_1 = x_1 @ self.W_query
-        keys_2 = x_2 @ self.W_key
-        values_2 = x_2 @ self.W_value
-
-        attn_scores = queries_1 @ keys_2.T
-        attn_weights = torch.softmax(
-            attn_scores / self.d_out_kq**0.5, dim=-1)
-
-        context_vec = attn_weights @ values_2
-        return context_vec
+        # Add gradient checkpointing
+        def attention_forward(x_1, x_2):
+            queries_1 = x_1 @ self.W_query
+            keys_2 = x_2 @ self.W_key
+            values_2 = x_2 @ self.W_value
+            
+            attn_scores = queries_1 @ keys_2.T
+            attn_scores = attn_scores / math.sqrt(self.d_out_kq)  # Scale dot products
+            attn_weights = F.softmax(attn_scores, dim=-1)
+            
+            return attn_weights @ values_2
+            
+        return torch.utils.checkpoint.checkpoint(attention_forward, x_1, x_2)
 
 class build_transformer(nn.Module):
     def __init__(self, num_classes, camera_num, view_num, cfg):

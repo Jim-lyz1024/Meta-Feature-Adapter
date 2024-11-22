@@ -82,6 +82,11 @@ def do_train_stage2(cfg,
         text_features = torch.cat(text_features, 0).cuda()
 
     for epoch in range(1, epochs + 1):
+        before_train_weights = {}
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                before_train_weights[name] = param.data.clone()
+        
         start_time = time.time()
         loss_meter.reset()
         acc_meter.reset()
@@ -114,8 +119,25 @@ def do_train_stage2(cfg,
                                       humidity_label=humidity_label, rain_label=rain_label, angle=angle)
                 logits = image_features @ text_features.t()
                 loss = loss_fn(score, feat, target, target_cam, logits)
+                
+                # Add loss debugging
+                print(f"Loss value: {loss.item()}")
+                
+                # Check if loss is valid
+                if not torch.isfinite(loss):
+                    print("Warning: Loss is infinite or NaN!")
+                    continue
 
             scaler.scale(loss).backward()
+            
+            # Add gradient debugging
+            total_norm = 0.
+            for p in model.parameters():
+                if p.grad is not None:
+                    param_norm = p.grad.data.norm(2)
+                    total_norm += param_norm.item() ** 2
+            total_norm = total_norm ** (1. / 2)
+            print(f"Gradient norm: {total_norm}")
 
             scaler.step(optimizer)
             scaler.update()
@@ -137,6 +159,16 @@ def do_train_stage2(cfg,
                             .format(epoch, (n_iter + 1), len(train_loader_stage2),
                                     loss_meter.avg, acc_meter.avg, scheduler.get_lr()[0]))
 
+        after_train_weights = {}
+        weight_changes = False
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                after_train_weights[name] = param.data.clone()
+                if not torch.equal(before_train_weights[name], after_train_weights[name]):
+                    weight_changes = True
+                    # print(f"Weights changed for {name}")
+        print(f"Epoch {epoch} - Weights changed: {weight_changes}")
+
         end_time = time.time()
         time_per_batch = (end_time - start_time) / (n_iter + 1)
         if cfg.MODEL.DIST_TRAIN:
@@ -154,11 +186,17 @@ def do_train_stage2(cfg,
                 torch.save(model.state_dict(),
                            os.path.join(cfg.OUTPUT_DIR, cfg.MODEL.NAME + '_{}.pth'.format(epoch)))
 
-        # if epoch % 1 == 0:
-        if epoch % eval_period == 0:
+        if epoch % 1 == 0:
+        # if epoch % eval_period == 0:
             if cfg.MODEL.DIST_TRAIN:
                 if dist.get_rank() == 0:
                     model.eval()
+                    val_weights = {}
+                    for name, param in model.named_parameters():
+                        if param.requires_grad:
+                            val_weights[name] = param.data.clone()
+                            if not torch.equal(after_train_weights[name], val_weights[name]):
+                                print(f"Warning: Weights changed between train and val for {name}")
                     for n_iter, (img, vid, camid, camids, target_view, _, temperature_label, humidity_label, rain_label, angle) in enumerate(val_loader):
                         with torch.no_grad():
                             img = img.to(device)

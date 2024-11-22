@@ -32,6 +32,10 @@ def make_optimizer_2stage(cfg, model, center_criterion):
             continue
         if not value.requires_grad:
             continue
+        
+        # Add debug print
+        print(f"Parameter {key}: requires_grad={value.requires_grad}")
+        
         lr = cfg.SOLVER.STAGE2.BASE_LR
         weight_decay = cfg.SOLVER.STAGE2.WEIGHT_DECAY
         if "bias" in key:
@@ -44,6 +48,10 @@ def make_optimizer_2stage(cfg, model, center_criterion):
         
         params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
         keys += [key]
+        
+    # Print total trainable parameters
+    print(f"Total trainable parameters: {len(params)}")
+        
     if cfg.SOLVER.STAGE2.OPTIMIZER_NAME == 'SGD':
         optimizer = getattr(torch.optim, cfg.SOLVER.STAGE2.OPTIMIZER_NAME)(params, momentum=cfg.SOLVER.STAGE2.MOMENTUM)
     elif cfg.SOLVER.STAGE2.OPTIMIZER_NAME == 'AdamW':
