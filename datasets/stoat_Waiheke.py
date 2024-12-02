@@ -23,7 +23,7 @@ class STOAT(BaseImageDataset):
     """
     dataset_dir = "Stoat"
 
-    def __init__(self, root='', verbose=True, pid_begin=0, data_p='/data/yil708/Code-CLIP-ReID/datasets_meta/stoat.json', **kwargs):
+    def __init__(self, root='', verbose=True, pid_begin=0, data_p='data/stoat.json', **kwargs):
         super(STOAT, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
         self.train_dir = osp.join(self.dataset_dir, 'train')
@@ -74,9 +74,9 @@ class STOAT(BaseImageDataset):
     def get_metalabel(self, dataset_info):
 
         temperature = dataset_info['temperature']
-        humidity = 0
-        rain = 0
-        angle = dataset_info['face_direction']
+        humidity = dataset_info['humidity']
+        rain = dataset_info['rain']
+        angle = dataset_info['angle']
 
         temperature = float(temperature)
         humidity = float(humidity)
@@ -120,8 +120,6 @@ class STOAT(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        img_paths.extend(glob.glob(osp.join(dir_path, '*.JPG')))  # Handle both upper and lower case extensions
-        
         pattern = re.compile(r'(\d+)_([A-Za-z0-9-]+)_(\d+)')
         
         print(f"\nProcessing directory: {dir_path}")
