@@ -12,19 +12,14 @@ from collections import defaultdict
 import pickle
 
 
-class STOAT(BaseImageDataset):
+class WALLABY(BaseImageDataset):
     """
-    New Zealand (Waiheke Island and South Island) Stoat Dataset
-    
-    Dataset statistics:
-    # train - South Island, gallery - Waiheke Island, query - Waiheke Island
-    # identities: 56 (train) + 5 (gallery) + 5 (query)
-    # images: 183 (train) + 13 (gallery) + 13 (query)
+    Wallaby Dataset
     """
-    dataset_dir = "Stoat"
+    dataset_dir = "Wallaby"
 
-    def __init__(self, root='', verbose=True, pid_begin=0, data_p='/data/yil708/Code-CLIP-ReID/datasets_meta/stoat.json', **kwargs):
-        super(STOAT, self).__init__()
+    def __init__(self, root='', verbose=True, pid_begin=0, data_p='/data/yil708/Code-CLIP-ReID/datasets_meta/wallaby.json', **kwargs):
+        super(WALLABY, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
         self.train_dir = osp.join(self.dataset_dir, 'train')
         self.query_dir = osp.join(self.dataset_dir, 'query')
@@ -46,7 +41,7 @@ class STOAT(BaseImageDataset):
         gallery = self._process_dir(self.gallery_dir, relabel=False)
 
         if verbose:
-            print("=> Stoat loaded")
+            print("=> Wallaby loaded")
             self.print_dataset_statistics(train, query, gallery)
 
         self.train = train

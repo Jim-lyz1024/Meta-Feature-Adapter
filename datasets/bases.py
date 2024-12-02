@@ -32,7 +32,7 @@ class BaseDataset(object):
 
     def get_imagedata_info(self, data):
         pids, cams, tracks = [], [], []
-        for _, pid, camid, trackid,temperature_label, humidity_label, rain_label, angle in data:
+        for _, pid, camid, trackid,temperature_label, humidity_label, light_label, angle in data:
             pids += [pid]
             cams += [camid]
             tracks += [trackid]
@@ -72,6 +72,7 @@ temperature2label = {'cold':0, 'mild':1, 'hot':2,}
 humidity2label = {'dry':0, 'moderate':1, 'humid':2,}
 rain2label = {'no rain':0, 'light':1, 'moderate':2,'heavy':3}
 angle2label = {'front':0, 'back':1, 'left':2, 'right':3}
+light2label = {'day':0, 'night':1}  
 
 
 class ImageDataset(Dataset):
@@ -83,11 +84,11 @@ class ImageDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid, trackid,temperature_label, humidity_label, rain_label, angle = self.dataset[index]
+        img_path, pid, camid, trackid,temperature_label, humidity_label, light_label, angle = self.dataset[index]
 
         temperature_label = temperature2label[temperature_label]
         humidity_label = humidity2label[humidity_label]
-        rain_label = rain2label[rain_label]
+        light_label = light2label[light_label]
         angle = angle2label[angle]
 
         img = read_image(img_path)
@@ -95,4 +96,4 @@ class ImageDataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        return img, pid, camid, trackid, img_path.split('/')[-1],temperature_label, humidity_label, rain_label, angle
+        return img, pid, camid, trackid, img_path.split('/')[-1],temperature_label, humidity_label, light_label, angle

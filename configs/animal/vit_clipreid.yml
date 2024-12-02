@@ -112,10 +112,10 @@ TEST:
 #   NECK_FEAT: 'before'
 #   FEAT_NORM: 'yes'
 
-# DATASETS:
-#   NAMES: ('deer')
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Deer/CLIP-ReID'
+DATASETS:
+  NAMES: ('deer')
+  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
+OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Deer/CLIP-ReID'
 
 # DATASETS:
 #   NAMES: ('hare')
@@ -137,11 +137,11 @@ TEST:
 #   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
 # OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Wallaby/CLIP-ReID'
 
-DATASETS:
-  NAMES: ("stoat")
-  # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
-  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
+# DATASETS:
+#   NAMES: ("stoat")
+#   # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
+#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
+# OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
 
 # DATASETS:
 #   NAMES: ("stoat")

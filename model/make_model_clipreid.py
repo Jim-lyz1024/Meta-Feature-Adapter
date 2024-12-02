@@ -142,10 +142,10 @@ class build_transformer(nn.Module):
 
     def forward(self, x=None, label=None, get_image=False, get_text=False, cam_label=None, view_label=None,
                 temperature_label=None,
-                humidity_label=None, rain_label=None, angle=None,
+                humidity_label=None, light_label=None, angle=None,
                 ):
         if get_text == True:
-            prompts = self.prompt_learner(label, temperature_label, humidity_label, rain_label, angle)
+            prompts = self.prompt_learner(label, temperature_label, humidity_label, light_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
             return text_features
 
@@ -182,7 +182,7 @@ class build_transformer(nn.Module):
 
 
         if self.training:
-            prompts = self.prompt_learner(label, temperature_label, humidity_label, rain_label, angle)
+            prompts = self.prompt_learner(label, temperature_label, humidity_label, light_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
 
             feat_proj = self.attn(feat_proj,text_features)
@@ -244,7 +244,23 @@ class PromptLearner(nn.Module):
             ctx_init = "A photo of a X X X X tiger."
 
         elif dataset_name == "stoat":
-            ctx_init = "A photo of a X X X X stoat, The temperature is X degrees, Humanity is X%, Rainfall is X mm, Angle is X"
+            # ctx_init = "A photo of a X X X X stoat, The temperature is X degrees, Humanity is X%, Rainfall is X mm, Angle is X"
+            ctx_init = "A photo of a X X X X stoat, The temperature is X degrees, with face direction X, taken during X"
+        
+        elif dataset_name == "deer":
+            ctx_init = "A photo of a X X X X deer, The temperature is X degrees, with face direction X, taken during X"
+        
+        elif dataset_name == "wallaby":
+            ctx_init = "A photo of a X X X X wallaby, The temperature is X degrees, with face direction X, taken during X"
+            
+        elif dataset_name == "penguin":
+            ctx_init = "A photo of a X X X X penguin, The temperature is X degrees, with face direction X, taken during X"
+        
+        elif dataset_name == "pukeko":
+            ctx_init = "A photo of a X X X X pukeko, The temperature is X degrees, with face direction X, taken during X"
+            
+        elif dataset_name == "hare":
+            ctx_init = "A photo of a X X X X hare, The temperature is X degrees, with face direction X, taken during X"
 
         elif dataset_name == "friesiancattle2017":
             ctx_init = "A photo of a X X X X cattle."
@@ -294,9 +310,9 @@ class PromptLearner(nn.Module):
         nn.init.normal_(angle_vectors, std=0.02)
         self.angle_ctx = nn.Parameter(angle_vectors)
 
-        rain_vectors = torch.empty(4, n_cls_ctx, ctx_dim, dtype=dtype)
-        nn.init.normal_(rain_vectors, std=0.02)
-        self.rain_ctx = nn.Parameter(rain_vectors)
+        light_vectors = torch.empty(2, n_cls_ctx, ctx_dim, dtype=dtype)
+        nn.init.normal_(light_vectors, std=0.02)
+        self.light_ctx = nn.Parameter(light_vectors)
 
         # These token vectors will be saved when in save_model(),
         # but they should be ignored in load_model() as we want to use
@@ -306,13 +322,13 @@ class PromptLearner(nn.Module):
         self.num_class = num_class
         self.n_cls_ctx = n_cls_ctx
 
-    def forward(self, label, temperature_label, humidity_label, rain_label, angle):
+    def forward(self, label, temperature_label, humidity_label, light_label, angle):
         cls_ctx = self.cls_ctx[label]
-        if all(x is not None for x in [temperature_label, humidity_label, rain_label, angle]):
+        if all(x is not None for x in [temperature_label, humidity_label, light_label, angle]):
             cls_ctx = (cls_ctx + 
                       self.temperature_ctx[temperature_label] + 
                       self.humidity_ctx[humidity_label] + 
-                      self.rain_ctx[rain_label] + 
+                      self.light_ctx[light_label] + 
                       self.angle_ctx[angle])
         b = label.shape[0]
         prefix = self.token_prefix.expand(b, -1, -1)
