@@ -30,7 +30,10 @@ class HARE(BaseImageDataset):
 
         infos = {}
         for d in data['images']:
-            infos[d['img_path'].split('\\')[-1]] = d['metadata']
+            # Store both lowercase and original versions
+            img_name = d['img_path'].split('\\')[-1]
+            infos[img_name.lower()] = d['metadata']
+            infos[img_name] = d['metadata']
 
         self.infos = infos
 
@@ -155,14 +158,17 @@ class HARE(BaseImageDataset):
                 if relabel:
                     pid = pid2label[pid]
                 
-                # Get metadata and labels
-                dataset_info = self.infos[basename.strip()]
-                if dataset_info is None:
-                    print(f"Warning: No metadata found for {basename}")
+                # Try to find metadata using case-insensitive lookup
+                try:
+                    dataset_info = self.infos.get(basename) or self.infos.get(basename.lower())
+                    if dataset_info is None:
+                        print(f"Warning: No metadata found for {basename}")
+                        continue
+                    metalabel = self.get_metalabel(dataset_info)
+                    dataset.append((img_path, self.pid_begin + pid, camid, 0, *metalabel))
+                except KeyError as e:
+                    print(f"Warning: Failed to process metadata for {basename}: {e}")
                     continue
-                metalabel = self.get_metalabel(dataset_info)
                 
-                dataset.append((img_path, self.pid_begin + pid, camid, 0, *metalabel))
-
         return dataset
 
