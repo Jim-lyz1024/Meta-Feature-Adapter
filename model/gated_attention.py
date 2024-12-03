@@ -61,10 +61,10 @@ class GatedCrossAttention(nn.Module):
         ], dim=-1)
         gate_weights = self.gate_net(gate_input)
         
-        print("-------------Gated Attention-----------")
-        print(gate_weights.shape)
-        print(gate_weights.min(), gate_weights.max())
-        print(gate_weights)
+        # print("-------------Gated Attention-----------")
+        # print(gate_weights.shape)
+        # print(gate_weights.min(), gate_weights.max())
+        # print(gate_weights)
         
         # Apply gating and ensure output dimensions
         context = context.squeeze(1)  # Remove sequence dimension

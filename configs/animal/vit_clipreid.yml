@@ -75,8 +75,8 @@ SOLVER:
     WARMUP_METHOD: 'linear'
     WEIGHT_DECAY:  1e-4
     WEIGHT_DECAY_BIAS: 1e-4
-    MAX_EPOCHS: 50
-    # MAX_EPOCHS: 5
+    # MAX_EPOCHS: 50
+    MAX_EPOCHS: 5
     CHECKPOINT_PERIOD: 50
     LOG_PERIOD: 10
     WARMUP_EPOCHS: 5
@@ -118,10 +118,10 @@ TEST:
 #   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
 # OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Deer/CLIP-ReID'
 
-# DATASETS:
-#   NAMES: ('hare')
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Hare/CLIP-ReID'
+DATASETS:
+  NAMES: ('hare')
+  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
+OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Hare/CLIP-ReID'
 
 # DATASETS:
 #   NAMES: ('penguin')
@@ -138,11 +138,11 @@ TEST:
 #   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
 # OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Wallaby/CLIP-ReID'
 
-DATASETS:
-  NAMES: ("stoat")
-  # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
-  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
+# DATASETS:
+#   NAMES: ("stoat")
+#   # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
+#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
+# OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
 
 # DATASETS:
 #   NAMES: ("stoat")

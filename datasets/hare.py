@@ -118,7 +118,7 @@ class HARE(BaseImageDataset):
         elif angle==3:
             angle_label='right'
 
-        print(temperature_label, humidity_label, light_label, angle_label)
+        # print(temperature_label, humidity_label, light_label, angle_label)
         # exit()
         return temperature_label, humidity_label, light_label, angle_label
 
