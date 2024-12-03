@@ -4,6 +4,7 @@ import numpy as np
 from .clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 from torch.nn import functional as F
 import math
+from .gated_attention import GatedCrossAttention
 
 _tokenizer = _Tokenizer()
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -137,19 +138,26 @@ class build_transformer(nn.Module):
         self.prompt_learner = PromptLearner(num_classes, dataset_name, clip_model.dtype, clip_model.token_embedding)
         self.text_encoder = TextEncoder(clip_model)
 
-        self.attn = CrossAttention (512, 512, 512)
+        # self.attn = CrossAttention (512, 512, 512)
+        self.attn = GatedCrossAttention(
+            d_in=self.in_planes_proj,  # Input dimension matches feat_proj
+            d_out_kq=self.in_planes_proj,  # Keep same dimension for key/query
+            d_out_v=self.in_planes_proj,  # Output dimension matches input
+            num_heads=8,
+            dropout=0.1
+        )
 
 
     def forward(self, x=None, label=None, get_image=False, get_text=False, cam_label=None, view_label=None,
                 temperature_label=None,
                 humidity_label=None, light_label=None, angle=None,
                 ):
-        if get_text == True:
+        if get_text:
             prompts = self.prompt_learner(label, temperature_label, humidity_label, light_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
             return text_features
 
-        if get_image == True:
+        if get_image:
             image_features_last, image_features, image_features_proj = self.image_encoder(x)
             if self.model_name == 'RN50':
                 return image_features_proj[0]
@@ -172,6 +180,7 @@ class build_transformer(nn.Module):
                 cv_embed = self.sie_coe * self.cv_embed[view_label]
             else:
                 cv_embed = None
+                
             image_features_last, image_features, image_features_proj = self.image_encoder(x, cv_embed)
             img_feature_last = image_features_last[:, 0]
             img_feature = image_features[:, 0]
@@ -185,6 +194,7 @@ class build_transformer(nn.Module):
             prompts = self.prompt_learner(label, temperature_label, humidity_label, light_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
 
+            # Apply gated cross attention instead of regular cross attention
             feat_proj = self.attn(feat_proj,text_features)
 
             cls_score = self.classifier(feat)

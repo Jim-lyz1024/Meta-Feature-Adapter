@@ -27,11 +27,17 @@ class CrossEntropyLabelSmooth(nn.Module):
             inputs: prediction matrix (before softmax) with shape (batch_size, num_classes)
             targets: ground truth labels with shape (num_classes)
         """
-        log_probs = self.logsoftmax(inputs) 
-        targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).data.cpu(), 1) 
-        if self.use_gpu: targets = targets.cuda()
-        targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
-        loss = (- targets * log_probs).mean(0).sum()
+        log_probs = self.logsoftmax(inputs)
+        # Ensure targets is a column vector
+        targets = targets.view(-1)
+        # Create one-hot encoding
+        targets_onehot = torch.zeros(log_probs.size())
+        if self.use_gpu:
+            targets_onehot = targets_onehot.cuda()
+        targets_onehot.scatter_(1, targets.unsqueeze(1), 1)
+        # Apply label smoothing
+        targets_onehot = (1 - self.epsilon) * targets_onehot + self.epsilon / self.num_classes
+        loss = (- targets_onehot * log_probs).sum(dim=1).mean()
         return loss
 
 class LabelSmoothingCrossEntropy(nn.Module):

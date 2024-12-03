@@ -133,16 +133,16 @@ TEST:
 #   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
 # OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Pukeko/CLIP-ReID'
 
-DATASETS:
-  NAMES: ('wallaby')
-  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Wallaby/CLIP-ReID'
-
 # DATASETS:
-#   NAMES: ("stoat")
-#   # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
+#   NAMES: ('wallaby')
 #   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
+# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Wallaby/CLIP-ReID'
+
+DATASETS:
+  NAMES: ("stoat")
+  # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
+  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
+OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
 
 # DATASETS:
 #   NAMES: ("stoat")
