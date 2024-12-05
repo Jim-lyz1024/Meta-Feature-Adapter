@@ -150,10 +150,10 @@ class build_transformer(nn.Module):
 
     def forward(self, x=None, label=None, get_image=False, get_text=False, cam_label=None, view_label=None,
                 temperature_label=None,
-                humidity_label=None, light_label=None, angle=None,
+             light_label=None, angle=None,
                 ):
         if get_text:
-            prompts = self.prompt_learner(label, temperature_label, humidity_label, light_label, angle)
+            prompts = self.prompt_learner(label, temperature_label, light_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
             return text_features
 
@@ -191,7 +191,7 @@ class build_transformer(nn.Module):
 
 
         if self.training:
-            prompts = self.prompt_learner(label, temperature_label, humidity_label, light_label, angle)
+            prompts = self.prompt_learner(label, temperature_label, light_label, angle)
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
 
             # Apply gated cross attention instead of regular cross attention
@@ -312,10 +312,6 @@ class PromptLearner(nn.Module):
         nn.init.normal_(temperature_vectors, std=0.02)
         self.temperature_ctx = nn.Parameter(temperature_vectors)
 
-        humidity_vectors = torch.empty(3, n_cls_ctx, ctx_dim, dtype=dtype)
-        nn.init.normal_(humidity_vectors, std=0.02)
-        self.humidity_ctx = nn.Parameter(humidity_vectors)
-
         angle_vectors = torch.empty(4, n_cls_ctx, ctx_dim, dtype=dtype)
         nn.init.normal_(angle_vectors, std=0.02)
         self.angle_ctx = nn.Parameter(angle_vectors)
@@ -332,12 +328,11 @@ class PromptLearner(nn.Module):
         self.num_class = num_class
         self.n_cls_ctx = n_cls_ctx
 
-    def forward(self, label, temperature_label, humidity_label, light_label, angle):
+    def forward(self, label, temperature_label, light_label, angle):
         cls_ctx = self.cls_ctx[label]
-        if all(x is not None for x in [temperature_label, humidity_label, light_label, angle]):
+        if all(x is not None for x in [temperature_label, light_label, angle]):
             cls_ctx = (cls_ctx + 
                       self.temperature_ctx[temperature_label] + 
-                      self.humidity_ctx[humidity_label] + 
                       self.light_ctx[light_label] + 
                       self.angle_ctx[angle])
         b = label.shape[0]

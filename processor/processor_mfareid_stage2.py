@@ -64,20 +64,18 @@ def do_train_stage2(cfg,
         for i in range(i_ter):
             if i + 1 != i_ter:
                 l_list = torch.arange(i * batch, (i + 1) * batch)
-                l_list1 = torch.randint(high=3, low=0,size=[batch])
-                l_list2 = torch.randint(high=3, low=0,size=[batch])
+                l_list1 = torch.randint(high=6, low=0,size=[batch])
                 l_list3 = torch.randint(high=2, low=0,size=[batch])
                 l_list4 = torch.randint(high=4, low=0,size=[batch])
             else:
                 l_list = torch.arange(i * batch, num_classes)
-                l_list1 = torch.randint(high=3, low=0,size=[num_classes-i * batch])
-                l_list2 = torch.randint(high=3, low=0,size=[num_classes-i * batch])
+                l_list1 = torch.randint(high=6, low=0,size=[num_classes-i * batch])
                 l_list3 = torch.randint(high=2, low=0,size=[num_classes-i * batch])
                 l_list4 = torch.randint(high=4, low=0,size=[num_classes-i * batch])
 
             with amp.autocast(enabled=True):
                 text_feature = model(label=l_list, get_text=True, temperature_label=l_list1,
-                                     humidity_label=l_list2, light_label=l_list3, angle=l_list4)
+                                     light_label=l_list3, angle=l_list4)
             text_features.append(text_feature.cpu())
         text_features = torch.cat(text_features, 0).cuda()
 
@@ -95,14 +93,13 @@ def do_train_stage2(cfg,
         scheduler.step()
 
         model.train()
-        for n_iter, (img, vid, target_cam, target_view, temperature_label, humidity_label, light_label, angle) in enumerate(train_loader_stage2):
+        for n_iter, (img, vid, target_cam, target_view, temperature_label,   light_label, angle) in enumerate(train_loader_stage2):
             optimizer.zero_grad()
             optimizer_center.zero_grad()
             img = img.to(device)
             target = vid.to(device)
 
             temperature_label = temperature_label.to(device)
-            humidity_label = humidity_label.to(device)
             light_label = light_label.to(device)
             angle = angle.to(device)
 
@@ -116,7 +113,7 @@ def do_train_stage2(cfg,
                 target_view = None
             with amp.autocast(enabled=True):
                 score, feat, image_features = model(x=img, label=target, cam_label=target_cam, view_label=target_view, temperature_label=temperature_label,
-                                      humidity_label=humidity_label, light_label=light_label, angle=angle)
+                                     light_label=light_label, angle=angle)
                 logits = image_features @ text_features.t()
                 loss = loss_fn(score, feat, target, target_cam, logits)
                 
@@ -197,7 +194,7 @@ def do_train_stage2(cfg,
                             val_weights[name] = param.data.clone()
                             if not torch.equal(after_train_weights[name], val_weights[name]):
                                 print(f"Warning: Weights changed between train and val for {name}")
-                    for n_iter, (img, vid, camid, camids, target_view, _, temperature_label, humidity_label, light_label, angle) in enumerate(val_loader):
+                    for n_iter, (img, vid, camid, camids, target_view, _, temperature_label, light_label, angle) in enumerate(val_loader):
                         with torch.no_grad():
                             img = img.to(device)
                             if cfg.MODEL.SIE_CAMERA:
@@ -209,7 +206,7 @@ def do_train_stage2(cfg,
                             else:
                                 target_view = None
                             feat = model(img, cam_label=camids, view_label=target_view, temperature_label=temperature_label,
-                                      humidity_label=humidity_label, light_label=light_label, angle=angle)
+                                      light_label=light_label, angle=angle)
                             evaluator.update((feat, vid, camid))
                     cmc, mAP, _, _, _, _, _ = evaluator.compute()
                     logger.info("Validation Results - Epoch: {}".format(epoch))
@@ -219,7 +216,7 @@ def do_train_stage2(cfg,
                     torch.cuda.empty_cache()
             else:
                 model.eval()
-                for n_iter, (img, vid, camid, camids, target_view, _, temperature_label, humidity_label, light_label, angle) in enumerate(val_loader):
+                for n_iter, (img, vid, camid, camids, target_view, _, temperature_label, light_label, angle) in enumerate(val_loader):
                     with torch.no_grad():
                         img = img.to(device)
                         if cfg.MODEL.SIE_CAMERA:
@@ -231,7 +228,7 @@ def do_train_stage2(cfg,
                         else:
                             target_view = None
                         feat = model(img, cam_label=camids, view_label=target_view, temperature_label=temperature_label,
-                                      humidity_label=humidity_label, light_label=light_label, angle=angle)
+                                      light_label=light_label, angle=angle)
                         evaluator.update((feat, vid, camid))
                 cmc, mAP, _, _, _, _, _ = evaluator.compute()
                 logger.info("Validation Results - Epoch: {}".format(epoch))

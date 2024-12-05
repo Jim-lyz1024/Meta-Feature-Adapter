@@ -69,37 +69,25 @@ class PENGUIN(BaseImageDataset):
     def get_metalabel(self, dataset_info):
 
         temperature = dataset_info['temperature']
-        humidity = 80
         light = dataset_info['day_night']
         angle = dataset_info['face_direction']
 
         temperature = float(temperature)
-        humidity = float(humidity)
         angle = float(angle)
         light = float(light)
 
-        if temperature < 17:
+        if temperature < 0:
+            temperature_label = 'Freezing'
+        elif temperature >= 0 and temperature < 5:
             temperature_label = 'cold'
-        elif temperature >= 17 and temperature < 20:
-            temperature_label = 'mild'
-        elif temperature >= 20:
+        elif temperature >= 5 and temperature < 10:
+            temperature_label = 'chilly'
+        elif temperature >= 10 and temperature < 15:
+            temperature_label = 'cool'
+        elif temperature >= 15 and temperature < 28:
+            temperature_label = 'warm'
+        elif temperature >= 28:
             temperature_label = 'hot'
-
-        if humidity < 75:
-            humidity_label = 'dry'
-        elif humidity >= 75 and humidity < 85:
-            humidity_label = 'moderate'
-        elif humidity >= 85:
-            humidity_label = 'humid'
-
-        # if rain == 0:
-        #     rain_label = 'no rain'
-        # elif rain > 0 and rain <= 10:
-        #     rain_label = 'light'
-        # elif rain > 10 and rain <= 50:
-        #     rain_label = 'moderate'
-        # elif rain >= 50:
-        #     rain_label = 'heavy'
         
         if light == 0:
             light_label = 'day'
@@ -115,9 +103,9 @@ class PENGUIN(BaseImageDataset):
         elif angle==3:
             angle_label='right'
 
-        print(temperature_label, humidity_label, light_label, angle_label)
+        print(temperature_label, light_label, angle_label)
         # exit()
-        return temperature_label, humidity_label, light_label, angle_label
+        return temperature_label, light_label, angle_label
 
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))

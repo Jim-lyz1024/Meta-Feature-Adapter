@@ -43,32 +43,27 @@ __factory = {
 }
 
 def train_collate_fn(batch):
-    """
-    # collate_fn这个函数的输入就是一个list，list的长度是一个batch size，list中的每个元素都是__getitem__得到的结果
-    """
-    imgs, pids, camids, viewids , _ ,temperature_label, humidity_label, light_label, angle= zip(*batch)
+    imgs, pids, camids, viewids , _ ,temperature_label, light_label, angle= zip(*batch)
     pids = torch.tensor(pids, dtype=torch.int64)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids = torch.tensor(camids, dtype=torch.int64)
 
     temperature_label = torch.tensor(temperature_label, dtype=torch.int64)
-    humidity_label = torch.tensor(humidity_label, dtype=torch.int64)
     light_label = torch.tensor(light_label, dtype=torch.int64)
     angle = torch.tensor(angle, dtype=torch.int64)
 
-    return torch.stack(imgs, dim=0), pids, camids, viewids,temperature_label, humidity_label, light_label, angle
+    return torch.stack(imgs, dim=0), pids, camids, viewids,temperature_label, light_label, angle
 
 def val_collate_fn(batch):
-    imgs, pids, camids, viewids, img_paths,temperature_label, humidity_label, light_label, angle = zip(*batch)
+    imgs, pids, camids, viewids, img_paths,temperature_label, light_label, angle = zip(*batch)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids_batch = torch.tensor(camids, dtype=torch.int64)
 
     temperature_label = torch.tensor(temperature_label, dtype=torch.int64)
-    humidity_label = torch.tensor(humidity_label, dtype=torch.int64)
     light_label = torch.tensor(light_label, dtype=torch.int64)
     angle = torch.tensor(angle, dtype=torch.int64)
 
-    return torch.stack(imgs, dim=0), pids, camids, camids_batch, viewids, img_paths,temperature_label, humidity_label, light_label, angle
+    return torch.stack(imgs, dim=0), pids, camids, camids_batch, viewids, img_paths, temperature_label, light_label, angle
 
 def make_dataloader(cfg):
     train_transforms = T.Compose([

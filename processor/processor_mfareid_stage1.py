@@ -42,36 +42,32 @@ def do_train_stage1(cfg,
     image_features = []
     labels = []
     temperature_labels = []
-    humidity_labels = []
     light_labels = []
     angles = []
 
     with torch.no_grad():
         for n_iter, (
-        img, vid, target_cam, target_view, temperature_label, humidity_label, light_label, angle) in enumerate(
+        img, vid, target_cam, target_view, temperature_label, light_label, angle) in enumerate(
                 train_loader_stage1):
             img = img.to(device)
             target = vid.to(device)
             temperature_label = temperature_label.to(device)
-            humidity_label = humidity_label.to(device)
             light_label = light_label.to(device)
             angle = angle.to(device)
             with amp.autocast(enabled=True):
                 image_feature = model(img, target, get_image=True)
-                for i, img_feat, temperature_label1, humidity_label1, light_label1, angle1 in zip(target, image_feature,
+                for i, img_feat, temperature_label1, light_label1, angle1 in zip(target, image_feature,
                                                                                                  temperature_label,
-                                                                                                 humidity_label,
+                                                                                                 
                                                                                                  light_label, angle):
                     labels.append(i)
                     temperature_labels.append(temperature_label1)
-                    humidity_labels.append(humidity_label1)
                     light_labels.append(light_label1)
                     angles.append(angle1)
                     image_features.append(img_feat.cpu())
         labels_list = torch.stack(labels, dim=0).cuda()  # N
 
         temperature_labels = torch.stack(temperature_labels, dim=0).cuda()  # N
-        humidity_labels = torch.stack(humidity_labels, dim=0).cuda()  # N
         light_labels = torch.stack(light_labels, dim=0).cuda()  # N
         angles = torch.stack(angles, dim=0).cuda()  # N
 
@@ -99,13 +95,12 @@ def do_train_stage1(cfg,
             image_features = image_features_list[b_list]
 
             temperature_label = temperature_labels[b_list]
-            humidity_label = humidity_labels[b_list]
             light_label = light_labels[b_list]
             angle = angles[b_list]
 
             with amp.autocast(enabled=True):
                 text_features = model(label=target, get_text=True, temperature_label=temperature_label,
-                                      humidity_label=humidity_label, light_label=light_label, angle=angle)
+                                     light_label=light_label, angle=angle)
             loss_i2t = xent(image_features, text_features, target, target)
             loss_t2i = xent(text_features, image_features, target, target)
 
