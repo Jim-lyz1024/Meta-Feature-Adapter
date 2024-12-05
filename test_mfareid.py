@@ -1,16 +1,16 @@
 import os
 from config import cfg
 import argparse
-from datasets.make_dataloader_clipreid import make_dataloader
-from model.make_model_clipreid import make_model
-from processor.processor_clipreid_stage2 import do_inference
+from datasets.make_dataloader_mfareid import make_dataloader
+from model.make_model_mfareid import make_model
+from processor.processor_mfareid_stage2 import do_inference
 from utils.logger import setup_logger
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
     parser.add_argument(
-        "--config_file", default="configs/person/vit_clipreid.yml", help="path to config file", type=str
+        "--config_file", default="configs/person/vit_mfareid.yml", help="path to config file", type=str
     )
     parser.add_argument("opts", help="Modify config options using the command-line", default=None,
                         nargs=argparse.REMAINDER)

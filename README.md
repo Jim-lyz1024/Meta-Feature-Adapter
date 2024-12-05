@@ -21,7 +21,7 @@ pip install regex
 
 ### Training
 ```
-python train_clipreid.py --config_file configs/animal/vit_clipreid.yml
+python train_mfareid.py --config_file configs/animal/vit_mfareid.yml
 ```
 
 ### Data Availability

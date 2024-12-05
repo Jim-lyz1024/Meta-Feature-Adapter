@@ -81,4 +81,4 @@ DATASETS:
 #   ROOT_DIR: ('')
 # OUTPUT_DIR: ''
 
-# CUDA_VISIBLE_DEVICES=1 python train_clipreid.py --config_file configs/person/res_clipreid.yml
+# CUDA_VISIBLE_DEVICES=1 python train_mfareid.py --config_file configs/person/res_mfareid.yml

@@ -115,34 +115,34 @@ TEST:
 
 # DATASETS:
 #   NAMES: ('deer')
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Deer/CLIP-ReID'
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets_meta/")
+# OUTPUT_DIR: '/data/yil708/Code-MFA-ReID/tests/Deer/MFA-ReID'
 
 DATASETS:
   NAMES: ('hare')
-  ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Hare/CLIP-ReID'
+  ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets_meta/")
+OUTPUT_DIR: '/data/yil708/Code-MFA-ReID/tests/Hare/MFA-ReID'
 
 # DATASETS:
 #   NAMES: ('penguin')
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID'
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets_meta/")
+# OUTPUT_DIR: '/data/yil708/Code-MFA-ReID/tests/Stoat/MFA-ReID'
 
 # DATASETS:
 #   NAMES: ('pukeko')
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Pukeko/CLIP-ReID'
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets_meta/")
+# OUTPUT_DIR: '/data/yil708/Code-MFA-ReID/tests/Pukeko/MFA-ReID'
 
 # DATASETS:
 #   NAMES: ('wallaby')
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Wallaby/CLIP-ReID'
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets_meta/")
+# OUTPUT_DIR: '/data/yil708/Code-MFA-ReID/tests/Wallaby/MFA-ReID'
 
 # DATASETS:
 #   NAMES: ("stoat")
-#   # ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/Meta-Feature-Adapter/data/")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets_meta/")
-# OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Stoat/CLIP-ReID"
+#   # ROOT_DIR: ("/data/yil708/Code-MFA-ReID/Meta-Feature-Adapter/data/")
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets_meta/")
+# OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/Stoat/MFA-ReID"
 
 # DATASETS:
 #   NAMES: ("stoat")
@@ -152,50 +152,50 @@ OUTPUT_DIR: '/data/yil708/Code-CLIP-ReID/tests/Hare/CLIP-ReID'
 
 #DATASETS:
 #   NAMES: ("atrw")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-#OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/ATRW/CoOp"
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+#OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/ATRW/CoOp"
 
 
 # DATASETS:
 #   NAMES: ("friesiancattle2017")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-# OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/FriesianCattle2017/CoOp"
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+# OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/FriesianCattle2017/CoOp"
 
 
 #DATASETS:
 #   NAMES: ("lion")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-#OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Lion/CoOp"
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+#OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/Lion/CoOp"
 
 
 #DATASETS:
    #NAMES: ("mpdd")
    # ROOT_DIR: ("/data/ywu840/dissertation")
-   #ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-#OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/MPDD/CoOp/"
+   #ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+#OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/MPDD/CoOp/"
 
 
 #DATASETS:
 #   NAMES: ("ipanda50")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-#OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/iPanda50/CoOp"
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+#OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/iPanda50/CoOp"
 
 
 # DATASETS:
 #    NAMES: ("seastar")
-#    ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-# OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/SeaStar/CoOp"
+#    ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+# OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/SeaStar/CoOp"
 
 
 #DATASETS:
 #   NAMES: ("nyala")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-#OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/Nyala/CoOp"
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+#OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/Nyala/CoOp"
 
 
 #DATASETS:
  #  NAMES: ("polarbear")
-#   ROOT_DIR: ("/data/yil708/Code-CLIP-ReID/datasets/")
-#OUTPUT_DIR: "/data/yil708/Code-CLIP-ReID/tests/PolarBear/CoOp"
+#   ROOT_DIR: ("/data/yil708/Code-MFA-ReID/datasets/")
+#OUTPUT_DIR: "/data/yil708/Code-MFA-ReID/tests/PolarBear/CoOp"
 
-# CUDA_VISIBLE_DEVICES=1 python train_clipreid.py --config_file configs/animal/vit_clipreid.yml
+# CUDA_VISIBLE_DEVICES=1 python train_mfareid.py --config_file configs/animal/vit_mfapreid.yml

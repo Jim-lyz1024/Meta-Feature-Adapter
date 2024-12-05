@@ -1,12 +1,12 @@
 from utils.logger import setup_logger
-from datasets.make_dataloader_clipreid import make_dataloader
-from model.make_model_clipreid import make_model
+from datasets.make_dataloader_mfareid import make_dataloader
+from model.make_model_mfareid import make_model
 from solver.make_optimizer_prompt import make_optimizer_1stage, make_optimizer_2stage
 from solver.scheduler_factory import create_scheduler
 from solver.lr_scheduler import WarmupMultiStepLR
 from loss.make_loss import make_loss
-from processor.processor_clipreid_stage1 import do_train_stage1
-from processor.processor_clipreid_stage2 import do_train_stage2
+from processor.processor_mfareid_stage1 import do_train_stage1
+from processor.processor_mfareid_stage2 import do_train_stage2
 import random
 import torch
 import numpy as np
@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
     parser.add_argument(
-        "--config_file", default="configs/animal/vit_clipreid.yml", help="path to config file", type=str
+        "--config_file", default="configs/animal/vit_mfareid.yml", help="path to config file", type=str
     )
 
     parser.add_argument("opts", help="Modify config options using the command-line", default=None,
